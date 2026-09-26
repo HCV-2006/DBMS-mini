@@ -1,0 +1,13 @@
+{
+  "app": {
+    "name": "Inventory Management System",
+    "port": 5000,
+    "itemsPerPage": 20
+  },
+  "database": {
+    "path": "./database/database.sqlite"
+  },
+  "storage": {
+    "productImages": "./storage/product-images"
+  }
+}

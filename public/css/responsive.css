@@ -1,0 +1,129 @@
+/* ============================================
+   Responsive Breakpoints
+   ============================================ */
+
+/* Tablet */
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 72px;
+    }
+
+    .sidebar .logo-text { display: none; }
+    .sidebar-nav .nav-item span { display: none; }
+    .sidebar-nav .nav-item {
+        justify-content: center;
+        padding: 0.75rem;
+    }
+    .sidebar-footer .user-details { display: none; }
+    .sidebar-footer .logout-btn span { display: none; }
+    .sidebar-footer { justify-content: center; flex-direction: column; gap: 0.5rem; }
+    .user-info { justify-content: center; }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    :root {
+        --sidebar-width: 0px;
+    }
+
+    .sidebar {
+        width: 280px;
+        transform: translateX(-100%);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar .logo-text { display: inline; }
+    .sidebar-nav .nav-item span { display: inline; }
+    .sidebar-nav .nav-item {
+        justify-content: flex-start;
+        padding: 0.7rem 1rem;
+    }
+    .sidebar-footer .user-details { display: flex; }
+    .sidebar-footer { flex-direction: row; justify-content: space-between; }
+    .user-info { justify-content: flex-start; }
+    .sidebar-close { display: block; }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .hamburger {
+        display: flex;
+    }
+
+    .topbar {
+        padding: 0 1rem;
+    }
+
+    .page-content {
+        padding: 1rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Responsive tables — horizontal scroll */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        min-width: 600px;
+    }
+
+    /* Touch targets */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .nav-item {
+        min-height: 44px;
+    }
+
+    .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .toast-container {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+    }
+
+    .toast {
+        min-width: auto;
+        max-width: none;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-box {
+        max-width: none;
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+    }
+}
