@@ -117,8 +117,20 @@ async function initDatabase() {
         console.warn('[DB] Products migration note:', migErr.message);
     }
 
-    // Seed only if database is new
-    if (isNew) {
+    // Seed if database is new, or ensure AYUSH profile is seeded on existing databases
+    let shouldSeed = isNew;
+    if (!shouldSeed) {
+        try {
+            const checkUser = db.exec("SELECT id FROM users WHERE username = 'ayush provision'");
+            if (checkUser.length === 0 || checkUser[0].values.length === 0) {
+                shouldSeed = true;
+            }
+        } catch {
+            shouldSeed = true;
+        }
+    }
+
+    if (shouldSeed) {
         const seed = fs.readFileSync(SEED_PATH, 'utf-8');
         // Split by semicolons and execute each statement
         const statements = seed.split(';').filter(s => s.trim().length > 0);
@@ -132,7 +144,7 @@ async function initDatabase() {
                 }
             }
         }
-        console.log('[DB] Seed data inserted');
+        console.log('[DB] Seed data applied successfully');
     }
 
     // Save to disk
