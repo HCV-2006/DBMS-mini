@@ -53,6 +53,70 @@ async function initDatabase() {
     try { db.run("UPDATE users SET role = 'admin' WHERE role = 'staff';"); } catch {}
     try { db.run("UPDATE settings SET value = 'Stocker' WHERE key = 'app_name';"); } catch {}
 
+    // Multi-tenant migration: remove legacy table-level global UNIQUE on categories.name and products.sku
+    try {
+        const catSchema = db.exec("SELECT sql FROM sqlite_master WHERE type='table' AND name='categories'");
+        if (catSchema.length > 0 && catSchema[0].values.length > 0 && /name\s+TEXT\s+UNIQUE/i.test(catSchema[0].values[0][0])) {
+            db.run('PRAGMA foreign_keys = OFF;');
+            db.run(`CREATE TABLE categories_v2 (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                name        TEXT NOT NULL,
+                user_id     INTEGER,
+                is_active   INTEGER NOT NULL DEFAULT 1,
+                created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );`);
+            db.run('INSERT INTO categories_v2 (id, name, user_id, is_active, created_at) SELECT id, name, user_id, is_active, created_at FROM categories;');
+            db.run('DROP TABLE categories;');
+            db.run('ALTER TABLE categories_v2 RENAME TO categories;');
+            db.run('CREATE INDEX IF NOT EXISTS idx_categories_active ON categories(is_active);');
+            db.run('CREATE INDEX IF NOT EXISTS idx_categories_user ON categories(user_id);');
+            db.run('PRAGMA foreign_keys = ON;');
+            console.log('[DB] Migrated categories table to multi-tenant schema');
+        }
+    } catch (migErr) {
+        console.warn('[DB] Categories migration note:', migErr.message);
+    }
+
+    try {
+        const prodSchema = db.exec("SELECT sql FROM sqlite_master WHERE type='table' AND name='products'");
+        if (prodSchema.length > 0 && prodSchema[0].values.length > 0 && /sku\s+TEXT\s+UNIQUE/i.test(prodSchema[0].values[0][0])) {
+            db.run('PRAGMA foreign_keys = OFF;');
+            db.run(`CREATE TABLE products_v2 (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                name            TEXT NOT NULL,
+                category_id     INTEGER NOT NULL,
+                supplier_id     INTEGER,
+                sku             TEXT NOT NULL,
+                price           REAL NOT NULL CHECK(price >= 0),
+                cost_price      REAL CHECK(cost_price >= 0),
+                quantity        INTEGER NOT NULL DEFAULT 0 CHECK(quantity >= 0),
+                minimum_stock   INTEGER NOT NULL DEFAULT 10 CHECK(minimum_stock >= 0),
+                unit            TEXT DEFAULT 'piece',
+                image           TEXT,
+                user_id         INTEGER DEFAULT 1,
+                is_active       INTEGER NOT NULL DEFAULT 1,
+                created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (category_id) REFERENCES categories(id),
+                FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );`);
+            db.run('INSERT INTO products_v2 (id, name, category_id, supplier_id, sku, price, cost_price, quantity, minimum_stock, unit, image, user_id, is_active, created_at, updated_at) SELECT id, name, category_id, supplier_id, sku, price, cost_price, quantity, minimum_stock, unit, image, user_id, is_active, created_at, updated_at FROM products;');
+            db.run('DROP TABLE products;');
+            db.run('ALTER TABLE products_v2 RENAME TO products;');
+            db.run('CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);');
+            db.run('CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);');
+            db.run('CREATE INDEX IF NOT EXISTS idx_products_supplier ON products(supplier_id);');
+            db.run('CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);');
+            db.run('CREATE INDEX IF NOT EXISTS idx_products_user ON products(user_id);');
+            db.run('PRAGMA foreign_keys = ON;');
+            console.log('[DB] Migrated products table to multi-tenant schema');
+        }
+    } catch (migErr) {
+        console.warn('[DB] Products migration note:', migErr.message);
+    }
+
     // Seed only if database is new
     if (isNew) {
         const seed = fs.readFileSync(SEED_PATH, 'utf-8');

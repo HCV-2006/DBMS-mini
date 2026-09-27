@@ -20,7 +20,11 @@ router.post('/login', loginLimiter, (req, res) => {
             });
         }
 
-        const user = db.get('SELECT * FROM users WHERE username = ?', [username.trim().toLowerCase()]);
+        const cleanUser = username.trim().toLowerCase();
+        const user = db.get(
+            'SELECT * FROM users WHERE username = ? OR username = ? OR username = ? OR LOWER(username) = ?',
+            [cleanUser, cleanUser.replace(/\s+/g, '_'), cleanUser.replace(/_/g, ' '), cleanUser]
+        );
 
         if (!user) {
             // Log failed attempt
@@ -101,10 +105,10 @@ router.post('/register', loginLimiter, (req, res) => {
         }
 
         const cleanUsername = username.trim().toLowerCase();
-        if (cleanUsername.length < 3 || cleanUsername.length > 30 || !/^[a-z0-9_.-]+$/.test(cleanUsername)) {
+        if (cleanUsername.length < 3 || cleanUsername.length > 50 || !/^[a-z0-9_.\s-]+$/.test(cleanUsername)) {
             return res.status(400).json({
                 success: false,
-                error: { code: 'VALIDATION_ERROR', message: 'Username must be 3-30 characters (letters, numbers, underscore, hyphen).' }
+                error: { code: 'VALIDATION_ERROR', message: 'Username must be 3-50 characters (letters, numbers, underscore, space, hyphen).' }
             });
         }
 
